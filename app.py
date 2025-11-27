@@ -12,15 +12,15 @@ TOKENIZER_PATH = f"{MODEL_DIR}/tokenizer.pkl"
 # Examples of evaluations (we can later replace these with actual evaluations of the dataset)
 SAMPLE_REVIEWS = [
     "This product is amazing, it exceeded all my expectations.",
-    "Terrible quality, I would not buy this again.",
-    "The item arrived on time and works as described.",
+    "This product is an absolute disaster. It stopped working properly within the first 24 hours, and the few times it did work, it performed terribly. The materials feel cheap, the system glitches constantly, and the instructions are confusing and poorly written. When I reached out for help, the customer service team was rude and completely unhelpful. I honestly regret spending even a single dollar on this. Save yourself the frustration and look for something else—this has been one of the worst shopping experiences I’ve ever had.",
+    "I recently purchased this product after reading several recommendations, and overall, I am quite satisfied with the performance. The build quality is solid, the features are intuitive, and it works exactly as advertised. I especially appreciate how easy it was to set up, even for someone who isn’t very tech-savvy. It’s not perfect—battery life could be slightly better, and the packaging felt a bit cheap—but these are minor issues compared to the value it provides. I would definitely recommend it to anyone looking for something reliable at a reasonable price.",
     "Very disappointed, it stopped working after a week.",
     "Excellent value for money, I highly recommend it.",
     "The packaging was damaged but the product was fine.",
-    "Not worth the price, I expected something better.",
+    "I had high expectations for this product, but unfortunately it didn’t live up to what was promised. While it looks nice on the outside, the performance is inconsistent and sometimes frustrating. After a few days of use, it began to lag and occasionally stopped working altogether. I tried contacting customer support but only received generic responses that didn’t solve the issue. For the price, I honestly expected something more durable and dependable. It’s not the worst thing I’ve bought, but I wouldn’t purchase it again.",
     "I love it! I use it every single day.",
     "The instructions were confusing and not helpful.",
-    "Great customer service and fast delivery."
+    "This is hands down one of the best products I’ve ever purchased. From the moment I opened the box, everything felt premium—the materials, the design, and especially the performance. It runs smoothly, delivers exactly what it promises, and even exceeds expectations in some areas. Customer service was also outstanding; they responded quickly and were extremely helpful. I’ve been using it daily without any issues, and it has genuinely improved my routine. I highly recommend it to anyone looking for quality and long-term value."
 ]
 
 # Load model + tokenizer at startup (only once)
