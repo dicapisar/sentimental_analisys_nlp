@@ -131,6 +131,7 @@ HTML_TEMPLATE = """
         background: #f9f9f9;
         max-height: 500px;
         overflow-y: auto;
+        margin-left: 20px;
       }
       .sidebar h2 {
         margin-top: 0;
@@ -191,7 +192,7 @@ HTML_TEMPLATE = """
   </head>
   <body>
     <h1>Amazon Review Sentiment Checker</h1>
-    <p>Type or paste an Amazon-style review and click "Analyse Sentiment".</p>
+    <p>Type or Select a Random Amazon Review and click "Analyse Sentiment".</p>
 
     <div class="layout">
       <div class="main">
@@ -199,11 +200,8 @@ HTML_TEMPLATE = """
           <textarea id="review-textarea" 
                     name="review" 
                     placeholder="Write your review here...">{{ text or "" }}</textarea>
-          <br><br>
-          <button type="submit">Analyse Sentiment</button>
-        </form>
 
-    {% if sentiment %}
+          {% if sentiment %}
       <div class="result {{ sentiment|lower }}">
         <span style="font-size: 40px;">
           {% if sentiment == "Positive" %}
@@ -227,6 +225,11 @@ HTML_TEMPLATE = """
         </div>
       </div>
     {% endif %}
+              <br><br>
+          <button type="submit">Analyse Sentiment</button>
+        </form>
+
+    
 
     <h2>How to interpret the score</h2>
     <table>
@@ -257,16 +260,11 @@ HTML_TEMPLATE = """
       </tr>
     </table>
 
-        {% if sentiment %}
-          <div class="result {{ sentiment|lower }}">
-            <strong>Prediction:</strong> {{ sentiment }}<br>
-            <strong>Confidence:</strong> {{ prob|round(3) }}
-          </div>
-        {% endif %}
+        
       </div>
 
       <div class="sidebar">
-        <h2>Random Reviews</h2>
+        <h2>Random Amazon Reviews</h2>
         <p>Select one review to analyse it:</p>
         <ul>
           {% for r in random_reviews %}
