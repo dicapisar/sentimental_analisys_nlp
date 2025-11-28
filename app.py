@@ -1,3 +1,13 @@
+"""
+Flask web application for interactive sentiment analysis of product reviews.
+
+This module:
+    - Loads a pre-trained sentiment analysis model and its corresponding tokenizer.
+    - Exposes a simple web interface where users can type or select an example review.
+    - Returns a sentiment label (Positive/Negative) and a probability score, along with
+      a visual progress bar and an interpretation table.
+"""
+
 # app.py
 from flask import Flask, request, render_template_string
 import tensorflow as tf
@@ -5,11 +15,17 @@ import pickle
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 import random
 
+# ---------------------------------------------------------------------------
+# Model and tokenizer configuration
+# ---------------------------------------------------------------------------
+
+# Directory and file paths for the trained model and tokenizer.
 MODEL_DIR = "./npl/model"
 MODEL_PATH = f"{MODEL_DIR}/sentiment_model.keras"
 TOKENIZER_PATH = f"{MODEL_DIR}/tokenizer.pkl"
 
-# Examples of evaluations (we can later replace these with actual evaluations of the dataset)
+# Examples of reviews for quick testing via the sidebar in the web interface.
+# These are illustrative and do not affect the model itself.
 SAMPLE_REVIEWS = [
     "This product is amazing, it exceeded all my expectations.",
     "This product is an absolute disaster. It stopped working properly within the first 24 hours, and the few times it did work, it performed terribly. The materials feel cheap, the system glitches constantly, and the instructions are confusing and poorly written. When I reached out for help, the customer service team was rude and completely unhelpful. I honestly regret spending even a single dollar on this. Save yourself the frustration and look for something else—this has been one of the worst shopping experiences I’ve ever had.",
@@ -23,18 +39,32 @@ SAMPLE_REVIEWS = [
     "This is hands down one of the best products I’ve ever purchased. From the moment I opened the box, everything felt premium—the materials, the design, and especially the performance. It runs smoothly, delivers exactly what it promises, and even exceeds expectations in some areas. Customer service was also outstanding; they responded quickly and were extremely helpful. I’ve been using it daily without any issues, and it has genuinely improved my routine. I highly recommend it to anyone looking for quality and long-term value."
 ]
 
-# Load model + tokenizer at startup (only once)
+# ---------------------------------------------------------------------------
+# Model and tokenizer loading (performed once at application startup)
+# ---------------------------------------------------------------------------
+
 print("Loading model and tokenizer...")
 model = tf.keras.models.load_model(MODEL_PATH)
 
-# Load tokenizer (picker contains ONLY tokenizer)
+# Load tokenizer (pickle file contains only the fitted tokenizer).
 with open(TOKENIZER_PATH, "rb") as f:
     tokenizer = pickle.load(f)
 
-MAXLEN = 300   # same as used during training
+# Maximum sequence length, which must match the value used during training.
+MAXLEN = 300
+
+# ---------------------------------------------------------------------------
+# Flask application setup
+# ---------------------------------------------------------------------------
 
 app = Flask(__name__)
 
+# HTML template for the web interface. This is rendered using Flask's
+# `render_template_string` and includes:
+#     - A text area for entering or editing a review.
+#     - A result panel with emoji feedback and a progress bar.
+#     - A table explaining how to interpret the score.
+#     - A sidebar with random example reviews.
 HTML_TEMPLATE = """
 <!doctype html>
 <html>
@@ -192,7 +222,7 @@ HTML_TEMPLATE = """
   </head>
   <body>
     <h1>Amazon Review Sentiment Checker</h1>
-    <p>Type or Select a Random Amazon Review and click "Analyse Sentiment".</p>
+    <p>Type or select a random Amazon review and click "Analyse Sentiment".</p>
 
     <div class="layout">
       <div class="main">
@@ -229,7 +259,7 @@ HTML_TEMPLATE = """
           <button type="submit">Analyse Sentiment</button>
         </form>
 
-    
+
 
     <h2>How to interpret the score</h2>
     <table>
@@ -260,7 +290,7 @@ HTML_TEMPLATE = """
       </tr>
     </table>
 
-        
+
       </div>
 
       <div class="sidebar">
@@ -284,17 +314,54 @@ HTML_TEMPLATE = """
 """
 
 
-def preprocess_text(text):
+# ---------------------------------------------------------------------------
+# Pre-processing and prediction utilities
+# ---------------------------------------------------------------------------
+
+
+def preprocess_text(text: str):
+    """
+    Convert a raw review string into a padded integer sequence.
+
+    The function assumes that `tokenizer` has already been fitted on the
+    training corpus and that `MAXLEN` matches the value used during model
+    training.
+
+    Args:
+        text (str): Raw review text to be processed.
+
+    Returns:
+        np.ndarray: A 2D array of shape (1, MAXLEN) representing the
+        padded sequence for the input text.
+    """
     seq = tokenizer.texts_to_sequences([text])
     padded = pad_sequences(seq, maxlen=MAXLEN, padding="post", truncating="post")
     return padded
 
+
 def predict_sentiment(text: str):
     """
-    Core prediction logic: - Cleans the text - Validates that it is not empty - Calls the model - Returns (sentiment_label, prob) or (None, None)
+    Generate a sentiment prediction for the given review text.
+
+    The function:
+        1. Strips whitespace and checks that the input is not empty.
+        2. Pre-processes the text into a padded integer sequence.
+        3. Uses the loaded model to predict a sentiment probability.
+        4. Maps the probability to a label ("Positive" or "Negative").
+
+    Args:
+        text (str): Raw review text provided by the user.
+
+    Returns:
+        tuple[str | None, float | None]:
+            - sentiment (str or None): "Positive" or "Negative" if prediction
+              is successful, otherwise None for empty input.
+            - prob (float or None): Predicted probability of the positive class
+              (between 0 and 1), or None if the input was empty.
     """
     clean_text = (text or "").strip()
     if not clean_text:
+        # No valid text to analyse.
         return None, None
 
     padded = preprocess_text(clean_text)
@@ -305,14 +372,40 @@ def predict_sentiment(text: str):
 
 
 def get_random_reviews(n: int = 5):
-    """Returns n random reviews from SAMPLE_REVIEWS."""
+    """
+    Select a small set of random example reviews for the sidebar.
+
+    Args:
+        n (int): Number of reviews to return. The value is capped at the
+            length of SAMPLE_REVIEWS to avoid errors.
+
+    Returns:
+        list[str]: List of randomly selected review strings. Returns an
+        empty list if SAMPLE_REVIEWS is empty.
+    """
     if not SAMPLE_REVIEWS:
         return []
     n = min(n, len(SAMPLE_REVIEWS))
     return random.sample(SAMPLE_REVIEWS, n)
 
+
+# ---------------------------------------------------------------------------
+# Flask routes
+# ---------------------------------------------------------------------------
+
 @app.route("/", methods=["GET", "POST"])
 def index():
+    """
+    Main route for the sentiment analysis web interface.
+
+    Handles both GET and POST requests:
+        - GET: Renders the form with an empty text area and random example reviews.
+        - POST: Reads the user's review from the form, computes sentiment,
+          and re-renders the page with the result and updated examples.
+
+    Returns:
+        str: Rendered HTML page as a string.
+    """
     sentiment = None
     prob = None
     text = ""
@@ -328,9 +421,22 @@ def index():
         sentiment=sentiment,
         prob=prob,
         text=text,
-        random_reviews = random_reviews,
+        random_reviews=random_reviews,
     )
 
 
+# ---------------------------------------------------------------------------
+# Application entry point helper
+# ---------------------------------------------------------------------------
+
 def start_flask_app():
+    """
+    Start the Flask development server.
+
+    The server is configured to:
+        - Listen on all available network interfaces (0.0.0.0).
+        - Use port 5001.
+        - Run with debug mode disabled (suitable for simple deployment or
+          classroom demonstrations, but not for production).
+    """
     app.run(host="0.0.0.0", port=5001, debug=False)
